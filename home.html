@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Productos - Lista de Precios Mayorista</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #10ac84 0%, #00a085 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 172, 132, 0.3);
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 172, 132, 0.4);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #4834d4 0%, #686de0 100%);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+            transition: background-color 0.2s ease;
+        }
+        
+        tr:hover {
+            background-color: #f8f9ff;
+        }
+        
+        .codigo {
+            font-family: 'Courier New', monospace;
+            background: #e3f2fd;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #1565c0;
+        }
+        
+        .precio {
+            font-weight: 600;
+            color: #27ae60;
+            text-align: right;
+        }
+        
+        .cantidad {
+            text-align: center;
+            color: #8e44ad;
+            font-weight: 500;
+        }
+        
+        .categoria {
+            background: #fff3cd;
+            font-weight: bold;
+            color: #856404;
+            text-align: center;
+        }
+        
+        .stats {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .photo-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-left: 8px;
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+        
+        .photo-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.4em;
+            font-weight: 500;
+        }
+        
+        .modal-header .codigo-modal {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .modal-body {
+            padding: 25px;
+        }
+        
+        .image-upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .image-upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .image-upload-area.dragover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #bbb;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-bottom: 15px;
+        }
+        
+        .image-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .image-info h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .info-label {
+            font-weight: 500;
+            color: #666;
+        }
+        
+        .info-value {
+            color: #333;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn-save {
+            background: linear-gradient(135deg, #10ac84 0%, #00a085 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-remove {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-save:hover, .btn-remove:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .has-image {
+            background: linear-gradient(135deg, #10ac84 0%, #00a085 100%);
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                min-width: auto;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            
+            .modal-body {
+                padding: 15px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Catálogo de Productos</h1>
+            <p>Lista de Precios Mayorista - Artículos para Fiestas</p>
+        </div>
+        
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar productos por nombre, código o categoría...">
+            </div>
+            <button class="export-btn" onclick="exportToExcel()">📊 Exportar a Excel</button>
+        </div>
+        
+        <div class="table-container">
+            <table id="productTable">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Código</th>
+                        <th>Cant. por Unidad</th>
+                        <th>Precio</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Los datos se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="totalProducts">0</div>
+                <div class="stat-label">Total Productos</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="totalCategories">7</div>
+                <div class="stat-label">Categorías</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="avgPrice">$0</div>
+                <div class="stat-label">Precio Promedio</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para gestión de imágenes -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Gestionar Imagen del Producto</h2>
+                <div id="modalCodigo" class="codigo-modal"></div>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="imageUploadArea" class="image-upload-area">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Arrastra una imagen aquí o haz clic para seleccionar</div>
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        Seleccionar Imagen
+                    </button>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                </div>
+                
+                <div id="imagePreviewContainer" style="display: none;">
+                    <img id="imagePreview" class="image-preview" alt="Vista previa">
+                    <div class="image-info">
+                        <h4>📋 Información de la Imagen</h4>
+                        <div class="info-row">
+                            <span class="info-label">Nombre:</span>
+                            <span class="info-value" id="imageName">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Tamaño:</span>
+                            <span class="info-value" id="imageSize">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Dimensiones:</span>
+                            <span class="info-value" id="imageDimensions">-</span>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-save" onclick="saveImage()">💾 Guardar Imagen</button>
+                        <button class="btn-remove" onclick="removeImage()">🗑️ Eliminar Imagen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const productos = [
+            // VELAS Y BENGALAS
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELAS CON BRILLO X 12U (celeste, rosa, blanco y dorado)', codigo: 'VB001', cantidad: 12, precio: 2700 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELAS CHICAS X 10U (blanco, celeste, rosa, multicolor)', codigo: 'VC002', cantidad: 10, precio: 1100 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELAS CHICAS X 12U (combinadas: multicolor, azul-celeste, rosa-fucsia)', codigo: 'VC003', cantidad: 12, precio: 1400 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELAS CHICAS CON BASE X 24U (blanco, rosa, celeste, boca, river, combinadas)', codigo: 'VCB004', cantidad: 24, precio: 2200 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELAS FINITAS X 24U (fucsia, celeste, blanco, negro, combinadas)', codigo: 'VF005', cantidad: 24, precio: 1300 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELON COMUN X 20U (rosa, blanco, celeste, salmon, lila, azul, verde, negro)', codigo: 'VL006', cantidad: 20, precio: 4850 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELON CON BRILLO X 20U (rosa, blanco, celeste, plata, oro, azul, lila, negro)', codigo: 'VLB007', cantidad: 20, precio: 7500 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELA CON FORMA DE CORAZON, ESTRELLA Y GLOBITO X 4U (CON BRILLO)', codigo: 'VF008', cantidad: 4, precio: 2000 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELA CON FORMA DE CORAZON, ESTRELLA Y GLOBITO X 4U (METALIZADAS)', codigo: 'VFM009', cantidad: 4, precio: 2000 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'BENGALAS HOLOGRAFICAS X 4U (azul, plata, oro y rojo)', codigo: 'BH010', cantidad: 4, precio: 1600 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'BENGALAS CON BRILLO X UNIDAD (todos los colores)', codigo: 'BB011', cantidad: 1, precio: 550 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'BENGALA CON PERSONAJES Y EQUIPOS X UNIDAD', codigo: 'BP012', cantidad: 1, precio: 500 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'ESTRELLITA-CORAZON MAGICA DORADO', codigo: 'EM013', cantidad: 1, precio: 900 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELA NUMERO CON PALITO (CON BRILLO, varios colores)', codigo: 'VN014', cantidad: 1, precio: 600 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELA NUMERO MEDIANA CON BASE (rosa, celeste y blanco)', codigo: 'VNM015', cantidad: 1, precio: 380 },
+            { categoria: 'VELAS Y BENGALAS', producto: 'VELA NUMEROTE GRANDE CON BASE (ROSA, CELESTE, BLANCO Y MULTICOLOR)', codigo: 'VNG016', cantidad: 1, precio: 630 },
+
+            // GLOBOS Y PIÑATAS DE LATEX
+            { categoria: 'GLOBOS Y PIÑATAS DE LATEX', producto: 'GLOBOS COMUNES 10" X 50 U (multicolor y por colores)', codigo: 'GC017', cantidad: 50, precio: 3200 },
+            { categoria: 'GLOBOS Y PIÑATAS DE LATEX', producto: 'GLOBOS FLUO Y PASTELES 10" X 50 U (multicolor y por color)', codigo: 'GF018', cantidad: 50, precio: 3400 },
+            { categoria: 'GLOBOS Y PIÑATAS DE LATEX', producto: 'GLOBOS CRISTAL 12" X 25 U', codigo: 'GCR019', cantidad: 25, precio: 2700 },
+            { categoria: 'GLOBOS Y PIÑATAS DE LATEX', producto: 'GLOBOS CRISTAL 10" X 50 U', codigo: 'GCR020', cantidad: 50, precio: 3450 },
+            { categoria: 'GLOBOS Y PIÑATAS DE LATEX', producto: 'GLOBOS LUNARES 10" X 10 U', codigo: 'GL021', cantidad: 10, precio: 1530 },
+            { categoria: 'GLOBOS Y PIÑATAS DE LATEX', producto: 'GLOBOS PIECITOS 10" X 10 U (rosa y celestes)', codigo: 'GP022', cantidad: 10, precio: 1530 },
+            { categoria: 'GLOBOS Y PIÑATAS DE LATEX', producto: 'PIÑATAS 24" (todos los colores, pasteles y con estrellitas)', codigo: 'PI023', cantidad: 1, precio: 1400 },
+
+            // GLOBOS METALIZADOS
+            { categoria: 'GLOBOS METALIZADOS', producto: 'GLOBOS NUMEROS 40 CM (oro, plata y rosa gold)', codigo: 'GN024', cantidad: 1, precio: 350 },
+            { categoria: 'GLOBOS METALIZADOS', producto: 'GLOBOS NUMEROS 80CM (oro y plata)', codigo: 'GN025', cantidad: 1, precio: 800 },
+            { categoria: 'GLOBOS METALIZADOS', producto: 'GLOBO ESTRELLA y REDONDO 10" FELIZ CUMPLE (varios colores)', codigo: 'GE026', cantidad: 1, precio: 150 },
+            { categoria: 'GLOBOS METALIZADOS', producto: 'FELIZ CUMPLE 40 CM CADA LETRA (todos los colores)', codigo: 'FC027', cantidad: 1, precio: 4300 },
+            { categoria: 'GLOBOS METALIZADOS', producto: 'FELIZ CUMPLE CURSIVA (todos los colores)', codigo: 'FCC028', cantidad: 1, precio: 2700 },
+            { categoria: 'GLOBOS METALIZADOS', producto: 'GLOBO CORAZON-ESTRELLA 12 CM (todos los colores)', codigo: 'GCE029', cantidad: 1, precio: 100 },
+            { categoria: 'GLOBOS METALIZADOS', producto: 'GLOBO CORAZON-ESTRELLA 45 CM (todos los colores)', codigo: 'GCE030', cantidad: 1, precio: 350 },
+            { categoria: 'GLOBOS METALIZADOS', producto: 'SET DE GLOBOS (todos los colores)', codigo: 'SG031', cantidad: 1, precio: 2500 },
+            { categoria: 'GLOBOS METALIZADOS', producto: 'COLA DE SIRENA Y CONFETTI', codigo: 'CS032', cantidad: 1, precio: 700 },
+
+            // FELIZ CUMPLE Y DECORACION
+            { categoria: 'FELIZ CUMPLE Y DECORACION', producto: 'FELIZ CUMPLE EN CARTON (todos los colores)', codigo: 'FCA033', cantidad: 1, precio: 990 },
+            { categoria: 'FELIZ CUMPLE Y DECORACION', producto: 'FELIZ CUMPLE EN GOMA EVA (todos los colores)', codigo: 'FCG034', cantidad: 1, precio: 2200 },
+            { categoria: 'FELIZ CUMPLE Y DECORACION', producto: 'CORTINAS FLECOS (todos los colores)', codigo: 'CF035', cantidad: 1, precio: 990 },
+            { categoria: 'FELIZ CUMPLE Y DECORACION', producto: 'CORTINAS CUADRADOS (todos los colores)', codigo: 'CC036', cantidad: 1, precio: 1900 },
+            { categoria: 'FELIZ CUMPLE Y DECORACION', producto: 'BANDERINES DE PLASTICO (todos los colores, fluo, pasteles y argentina)', codigo: 'BP037', cantidad: 1, precio: 1450 },
+
+            // ARTICULOS VARIOS
+            { categoria: 'ARTICULOS VARIOS', producto: 'BURBUJEROS CHICOS X10', codigo: 'BC038', cantidad: 10, precio: 2900 },
+            { categoria: 'ARTICULOS VARIOS', producto: 'PELOTAS SALTARINAS X 50', codigo: 'PS039', cantidad: 50, precio: 12000 },
+            { categoria: 'ARTICULOS VARIOS', producto: 'LUCES DE ALAMBRE 2 METROS CALIDAS Y FRIAS X 10', codigo: 'LA040', cantidad: 10, precio: 6200 },
+            { categoria: 'ARTICULOS VARIOS', producto: 'MARIPOSAS X 6 U (METALIZADAS, CON BRILLOS Y COMUNES)', codigo: 'MP041', cantidad: 6, precio: 1400 },
+            { categoria: 'ARTICULOS VARIOS', producto: 'STRASS PARA LA CARA', codigo: 'SC042', cantidad: 1, precio: 500 },
+            { categoria: 'ARTICULOS VARIOS', producto: 'STRASS PARA LA CARA', codigo: 'SC043', cantidad: 1, precio: 700 },
+            { categoria: 'ARTICULOS VARIOS', producto: 'PINTURA PARA PELO EN AEROSOL', codigo: 'PP044', cantidad: 1, precio: 1800 },
+            { categoria: 'ARTICULOS VARIOS', producto: 'NIEVE Y SERPENTINA EN AEROSOL', codigo: 'NS045', cantidad: 1, precio: 1800 },
+            { categoria: 'ARTICULOS VARIOS', producto: 'BENGALAS DE MANO DE HUMO', codigo: 'BH046', cantidad: 1, precio: 2250 },
+
+            // ADORNOS TORTA
+            { categoria: 'ADORNOS TORTA', producto: 'TOPPERS FELIZ CUMPLE 3D LETRAS CURSIVAS', codigo: 'TF047', cantidad: 1, precio: 900 },
+            { categoria: 'ADORNOS TORTA', producto: 'TOPPERS FELIZ CUMPLE PARA TORTA DE PLASTICO', codigo: 'TFP048', cantidad: 1, precio: 600 },
+            { categoria: 'ADORNOS TORTA', producto: 'TOPPERS FELIZ CUMPLE PARA TORTA MARIPOSAS', codigo: 'TFM049', cantidad: 1, precio: 1400 },
+            { categoria: 'ADORNOS TORTA', producto: 'ESCUDOS DE FUTBOL GRANDES X 10', codigo: 'EFG050', cantidad: 10, precio: 4800 },
+            { categoria: 'ADORNOS TORTA', producto: 'ESCUDOS DE FUTBOL CHICOS X 10', codigo: 'EFC051', cantidad: 10, precio: 3200 },
+            { categoria: 'ADORNOS TORTA', producto: 'BANDERINES', codigo: 'BN052', cantidad: 1, precio: 500 },
+            { categoria: 'ADORNOS TORTA', producto: 'BANDERINES DE EQUIPOS DE FUTBOL', codigo: 'BEF053', cantidad: 1, precio: 600 }
+        ];
+
+        let filteredProductos = productos;
+        let productImages = {}; // Almacenar imágenes de productos
+        let currentProductCode = null;
+
+        function formatPrice(price) {
+            return `$ ${price.toLocaleString('es-AR')}`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            let currentCategory = '';
+            
+            filteredProductos.forEach(item => {
+                if (item.categoria !== currentCategory) {
+                    currentCategory = item.categoria;
+                    const categoryRow = document.createElement('tr');
+                    categoryRow.innerHTML = `
+                        <td colspan="4" class="categoria">📂 ${item.categoria}</td>
+                    `;
+                    tbody.appendChild(categoryRow);
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        ${item.producto}
+                        <button class="photo-btn ${productImages[item.codigo] ? 'has-image' : ''}" onclick="openImageModal('${item.codigo}', '${item.producto.replace(/'/g, "\\'")}')">
+                            ${productImages[item.codigo] ? '📷 Ver' : '📷 Agregar'}
+                        </button>
+                    </td>
+                    <td><span class="codigo">${item.codigo}</span></td>
+                    <td class="cantidad">${item.cantidad}</td>
+                    <td class="precio">${formatPrice(item.precio)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            updateStats();
+        }
+
+        function updateStats() {
+            const totalProducts = filteredProductos.length;
+            const avgPrice = Math.round(filteredProductos.reduce((sum, p) => sum + p.precio, 0) / totalProducts);
+            
+            document.getElementById('totalProducts').textContent = totalProducts;
+            document.getElementById('avgPrice').textContent = formatPrice(avgPrice);
+        }
+
+        function searchProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            filteredProductos = productos.filter(item => 
+                item.producto.toLowerCase().includes(searchTerm) ||
+                item.codigo.toLowerCase().includes(searchTerm) ||
+                item.categoria.toLowerCase().includes(searchTerm)
+            );
+            
+            renderTable();
+        }
+
+        function exportToExcel() {
+            const data = [];
+            
+            // Headers
+            data.push(['Producto', 'Código', 'Cant. por Unidad', 'Precio']);
+            
+            // Data rows
+            productos.forEach(item => {
+                data.push([item.producto, item.codigo, item.cantidad, item.precio]);
+            });
+            
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            
+            // Style the header row
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const address = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (!ws[address]) continue;
+                ws[address].s = {
+                    font: { bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "4834D4" } }
+                };
+            }
+            
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 60 }, // Producto
+                { wch: 10 }, // Código
+                { wch: 15 }, // Cantidad
+                { wch: 12 }  // Precio
+            ];
+            
+            XLSX.utils.book_append_sheet(wb, ws, 'Catálogo');
+            
+            // Export file
+            XLSX.writeFile(wb, 'catalogo_productos_mayorista.xlsx');
+        }
+
+        // Funciones para gestión de imágenes
+        function openImageModal(codigo, producto) {
+            currentProductCode = codigo;
+            document.getElementById('modalTitle').textContent = producto;
+            document.getElementById('modalCodigo').textContent = codigo;
+            
+            const modal = document.getElementById('imageModal');
+            modal.style.display = 'block';
+            
+            // Si ya hay una imagen, mostrarla
+            if (productImages[codigo]) {
+                showImagePreview(productImages[codigo]);
+            } else {
+                hideImagePreview();
+            }
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+            currentProductCode = null;
+            hideImagePreview();
+        }
+
+        function showImagePreview(imageData) {
+            document.getElementById('imageUploadArea').style.display = 'none';
+            document.getElementById('imagePreviewContainer').style.display = 'block';
+            document.getElementById('imagePreview').src = imageData.url;
+            document.getElementById('imageName').textContent = imageData.name;
+            document.getElementById('imageSize').textContent = imageData.size;
+            document.getElementById('imageDimensions').textContent = imageData.dimensions;
+        }
+
+        function hideImagePreview() {
+            document.getElementById('imageUploadArea').style.display = 'block';
+            document.getElementById('imagePreviewContainer').style.display = 'none';
+        }
+
+        function handleFileSelect(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const imageData = {
+                            url: e.target.result,
+                            name: file.name,
+                            size: formatFileSize(file.size),
+                            dimensions: `${img.width} x ${img.height}px`
+                        };
+                        showImagePreview(imageData);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function saveImage() {
+            if (currentProductCode) {
+                const imageData = {
+                    url: document.getElementById('imagePreview').src,
+                    name: document.getElementById('imageName').textContent,
+                    size: document.getElementById('imageSize').textContent,
+                    dimensions: document.getElementById('imageDimensions').textContent
+                };
+                
+                productImages[currentProductCode] = imageData;
+                renderTable(); // Actualizar la tabla para mostrar el botón como "Ver"
+                closeImageModal();
+                
+                // Mostrar mensaje de éxito
+                showNotification('✅ Imagen guardada correctamente', 'success');
+            }
+        }
+
+        function removeImage() {
+            if (currentProductCode && productImages[currentProductCode]) {
+                delete productImages[currentProductCode];
+                renderTable();
+                hideImagePreview();
+                showNotification('🗑️ Imagen eliminada', 'info');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // Crear notificación temporal
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10ac84' : type === 'error' ? '#ff6b6b' : '#667eea'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                z-index: 10000;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                animation: slideInRight 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', searchProducts);
+
+        // Modal events
+        document.querySelector('.close').addEventListener('click', closeImageModal);
+        
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('imageModal');
+            if (event.target === modal) {
+                closeImageModal();
+            }
+        });
+
+        // File input events
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileSelect(file);
+            }
+        });
+
+        // Drag and drop events
+        const uploadArea = document.getElementById('imageUploadArea');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFileSelect(file);
+            }
+        });
+
+        uploadArea.addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+
+        // Initialize
+        renderTable();
+    </script>
+</body>
+</html>
