@@ -500,35 +500,18 @@
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
-                <div id="imageUploadArea" class="image-upload-area">
-                    <div class="upload-icon">📷</div>
-                    <div class="upload-text">Arrastra una imagen aquí o haz clic para seleccionar</div>
-                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-                        Seleccionar Imagen
-                    </button>
-                    <input type="file" id="fileInput" class="file-input" accept="image/*">
-                </div>
-                
-                <div id="imagePreviewContainer" style="display: none;">
-                    <img id="imagePreview" class="image-preview" alt="Vista previa">
+                <div id="imagePreviewContainer">
+                    <img id="imagePreview" class="image-preview" alt="Imagen del producto">
                     <div class="image-info">
-                        <h4>📋 Información de la Imagen</h4>
+                        <h4>📋 Información del Producto</h4>
                         <div class="info-row">
-                            <span class="info-label">Nombre:</span>
-                            <span class="info-value" id="imageName">-</span>
+                            <span class="info-label">Código:</span>
+                            <span class="info-value" id="productCode">-</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Tamaño:</span>
-                            <span class="info-value" id="imageSize">-</span>
+                            <span class="info-label">Producto:</span>
+                            <span class="info-value" id="productName">-</span>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">Dimensiones:</span>
-                            <span class="info-value" id="imageDimensions">-</span>
-                        </div>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn-save" onclick="saveImage()">💾 Guardar Imagen</button>
-                        <button class="btn-remove" onclick="removeImage()">🗑️ Eliminar Imagen</button>
                     </div>
                 </div>
             </div>
@@ -606,6 +589,74 @@
         let filteredProductos = productos;
         let productImages = {}; // Almacenar imágenes de productos
         let currentProductCode = null;
+        
+        // Definir imágenes de productos - agregar URLs de imágenes aquí
+        const productImageUrls = {
+            'VB001': './assets/ejemplo.jpg',
+            'VC002': './assets/ejemplo.jpg',
+            'VC003': './assets/ejemplo.jpg',
+            'VCB004': './assets/ejemplo.jpg',
+            'VF005': './assets/ejemplo.jpg',
+            'VL006': './assets/ejemplo.jpg',
+            'VLB007': './assets/ejemplo.jpg',
+            'VF008': './assets/ejemplo.jpg',
+            'VFM009': './assets/ejemplo.jpg',
+            'BH010': './assets/ejemplo.jpg',
+            'BB011': './assets/ejemplo.jpg',
+            'BP012': './assets/ejemplo.jpg',
+            'EM013': './assets/ejemplo.jpg',
+            'VN014': './assets/ejemplo.jpg',
+            'VNM015': './assets/ejemplo.jpg',
+            'VNG016': './assets/ejemplo.jpg',
+            'GC017': './assets/ejemplo.jpg',
+            'GF018': './assets/ejemplo.jpg',
+            'GCR019': './assets/ejemplo.jpg',
+            'GCR020': './assets/ejemplo.jpg',
+            'GL021': './assets/ejemplo.jpg',
+            'GP022': './assets/ejemplo.jpg',
+            'PI023': './assets/ejemplo.jpg',
+            'GN024': './assets/ejemplo.jpg',
+            'GN025': './assets/ejemplo.jpg',
+            'GE026': './assets/ejemplo.jpg',
+            'FC027': './assets/ejemplo.jpg',
+            'FCC028': './assets/ejemplo.jpg',
+            'GCE029': './assets/ejemplo.jpg',
+            'GCE030': './assets/ejemplo.jpg',
+            'SG031': './assets/ejemplo.jpg',
+            'CS032': './assets/ejemplo.jpg',
+            'FCA033': './assets/ejemplo.jpg',
+            'FCG034': './assets/ejemplo.jpg',
+            'CF035': './assets/ejemplo.jpg',
+            'CC036': './assets/ejemplo.jpg',
+            'BP037': './assets/ejemplo.jpg',
+            'BC038': './assets/ejemplo.jpg',
+            'PS039': './assets/ejemplo.jpg',
+            'LA040': './assets/ejemplo.jpg',
+            'MP041': './assets/ejemplo.jpg',
+            'SC042': './assets/ejemplo.jpg',
+            'SC043': './assets/ejemplo.jpg',
+            'PP044': './assets/ejemplo.jpg',
+            'NS045': './assets/ejemplo.jpg',
+            'BH046': './assets/ejemplo.jpg',
+            'TF047': './assets/ejemplo.jpg',
+            'TFP048': './assets/ejemplo.jpg',
+            'TFM049': './assets/ejemplo.jpg',
+            'EFG050': './assets/ejemplo.jpg',
+            'EFC051': './assets/ejemplo.jpg',
+            'BN052': './assets/ejemplo.jpg',
+            'BEF053': './assets/ejemplo.jpg'
+            // Agregar más códigos de productos con sus URLs de imágenes
+        };
+
+        // Inicializar productImages con las URLs definidas
+        Object.keys(productImageUrls).forEach(codigo => {
+            productImages[codigo] = {
+                url: productImageUrls[codigo],
+                name: `Imagen de ${codigo}`,
+                size: 'N/A',
+                dimensions: 'N/A'
+            };
+        });
 
         function formatPrice(price) {
             return `$ ${price.toLocaleString('es-AR')}`;
@@ -705,20 +756,21 @@
             XLSX.writeFile(wb, 'catalogo_productos_mayorista.xlsx');
         }
 
-        // Funciones para gestión de imágenes
         function openImageModal(codigo, producto) {
             currentProductCode = codigo;
             document.getElementById('modalTitle').textContent = producto;
             document.getElementById('modalCodigo').textContent = codigo;
+            document.getElementById('productCode').textContent = codigo;
+            document.getElementById('productName').textContent = producto;
             
             const modal = document.getElementById('imageModal');
             modal.style.display = 'block';
             
-            // Si ya hay una imagen, mostrarla
+            // Mostrar imagen si existe
             if (productImages[codigo]) {
-                showImagePreview(productImages[codigo]);
+                document.getElementById('imagePreview').src = productImages[codigo].url;
             } else {
-                hideImagePreview();
+                document.getElementById('imagePreview').src = 'https://via.placeholder.com/400x300?text=Sin+Imagen';
             }
         }
 
@@ -726,75 +778,6 @@
             document.getElementById('imageModal').style.display = 'none';
             currentProductCode = null;
             hideImagePreview();
-        }
-
-        function showImagePreview(imageData) {
-            document.getElementById('imageUploadArea').style.display = 'none';
-            document.getElementById('imagePreviewContainer').style.display = 'block';
-            document.getElementById('imagePreview').src = imageData.url;
-            document.getElementById('imageName').textContent = imageData.name;
-            document.getElementById('imageSize').textContent = imageData.size;
-            document.getElementById('imageDimensions').textContent = imageData.dimensions;
-        }
-
-        function hideImagePreview() {
-            document.getElementById('imageUploadArea').style.display = 'block';
-            document.getElementById('imagePreviewContainer').style.display = 'none';
-        }
-
-        function handleFileSelect(file) {
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const imageData = {
-                            url: e.target.result,
-                            name: file.name,
-                            size: formatFileSize(file.size),
-                            dimensions: `${img.width} x ${img.height}px`
-                        };
-                        showImagePreview(imageData);
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function saveImage() {
-            if (currentProductCode) {
-                const imageData = {
-                    url: document.getElementById('imagePreview').src,
-                    name: document.getElementById('imageName').textContent,
-                    size: document.getElementById('imageSize').textContent,
-                    dimensions: document.getElementById('imageDimensions').textContent
-                };
-                
-                productImages[currentProductCode] = imageData;
-                renderTable(); // Actualizar la tabla para mostrar el botón como "Ver"
-                closeImageModal();
-                
-                // Mostrar mensaje de éxito
-                showNotification('✅ Imagen guardada correctamente', 'success');
-            }
-        }
-
-        function removeImage() {
-            if (currentProductCode && productImages[currentProductCode]) {
-                delete productImages[currentProductCode];
-                renderTable();
-                hideImagePreview();
-                showNotification('🗑️ Imagen eliminada', 'info');
-            }
         }
 
         function showNotification(message, type = 'info') {
@@ -835,40 +818,6 @@
             if (event.target === modal) {
                 closeImageModal();
             }
-        });
-
-        // File input events
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                handleFileSelect(file);
-            }
-        });
-
-        // Drag and drop events
-        const uploadArea = document.getElementById('imageUploadArea');
-        
-        uploadArea.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-        
-        uploadArea.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-        });
-        
-        uploadArea.addEventListener('drop', function(e) {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                handleFileSelect(file);
-            }
-        });
-
-        uploadArea.addEventListener('click', function() {
-            document.getElementById('fileInput').click();
         });
 
         // Initialize
